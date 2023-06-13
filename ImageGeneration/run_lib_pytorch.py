@@ -125,7 +125,11 @@ def train(config, workdir):
         batch = scaler(batch)
     
         # Execute one training step
-        loss = train_step_fn(state, batch)
+        if np.random.rand() > max(0, 1-(step/num_train_steps)):
+          # Use EMA batch
+          loss = train_step_fn(state, batch, use_ema=True)
+        else:
+          loss = train_step_fn(state, batch, use_ema=False)
         if step % config.training.log_freq == 0:
           logging.info("step: %d, training_loss: %.5e" % (step, loss.item()))
           writer.add_scalar("training_loss", loss, step)
