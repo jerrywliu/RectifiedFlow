@@ -96,10 +96,33 @@ class RectifiedFlow():
     def get_z0(self, batch, train=True):
       n,c,h,w = batch.shape 
 
-      if self.init_type == 'gaussian':
+      if self.init_type == 'gaussian': # white
           ### standard gaussian #+ 0.5
           cur_shape = (n, c, h, w)
           return torch.randn(cur_shape)*self.noise_scale
+      elif self.init_type in ['brown', 'pink', 'blue', 'violet']:
+          cur_shape = (n, c, h, w)
+          noise = torch.randn(cur_shape)
+          ret_noise = torch.fft.rfft2(noise)
+          # Frequencies for each dimension
+          freqs = torch.abs(torch.fft.fftfreq(cur_shape[-2])[:, None])**2 + torch.abs(torch.fft.rfftfreq(cur_shape[-1])[None, :])**2
+          if self.init_type == 'pink':
+            scale = 1.0 / torch.sqrt(freqs)
+          elif self.init_type == 'brown':
+            scale = 1.0 / freqs
+          elif self.init_type == 'blue':
+            scale = torch.sqrt(freqs)
+          elif self.init_type == 'violet':
+            scale = freqs
+          scale = torch.nan_to_num(scale, nan=0.0, posinf=0.0, neginf=0.0)
+
+          # Scale by frequency
+          ret_noise = ret_noise * scale
+          ret_noise = torch.fft.irfft2(ret_noise)
+
+          # Scale to noise scale
+          ret_noise = ret_noise/torch.norm(ret_noise)*torch.norm(noise)
+          return ret_noise * self.noise_scale
       else:
           raise NotImplementedError("INITIALIZATION TYPE NOT IMPLEMENTED") 
       

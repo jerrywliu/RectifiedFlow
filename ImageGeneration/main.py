@@ -30,7 +30,7 @@ FLAGS = flags.FLAGS
 config_flags.DEFINE_config_file(
   "config", None, "Training configuration.", lock_config=True)
 flags.DEFINE_string("workdir", None, "Work directory.")
-flags.DEFINE_enum("mode", None, ["train", "eval", "reflow"], "Running mode")
+flags.DEFINE_enum("mode", None, ["train", "eval", "eval_traj", "reflow"], "Running mode")
 flags.DEFINE_string("eval_folder", "eval",
                     "The folder name for storing evaluation results")
 flags.mark_flags_as_required(["workdir", "config", "mode"])
@@ -60,6 +60,12 @@ def main(argv):
         run_lib_pytorch.evaluate(FLAGS.config, FLAGS.workdir, FLAGS.eval_folder)
     else:
         run_lib.evaluate(FLAGS.config, FLAGS.workdir, FLAGS.eval_folder)
+  elif FLAGS.mode == "eval_traj":
+    # Run the evaluation pipeline
+    if 'pytorch' in FLAGS.config.data.dataset.lower():
+        run_lib_pytorch.evaluate_trajectory(FLAGS.config, FLAGS.workdir, FLAGS.eval_folder)
+    else:
+        run_lib.evaluate_trajectory(FLAGS.config, FLAGS.workdir, FLAGS.eval_folder)
   elif  FLAGS.mode == "reflow":
     run_lib_reflow.finetune_reflow(FLAGS.config, FLAGS.workdir)
   else:

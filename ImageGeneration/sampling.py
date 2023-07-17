@@ -65,7 +65,7 @@ def get_rectified_flow_sampler(sde, shape, inverse_scaler, device='cuda'):
   Returns:
     A sampling function that returns samples and the number of function evaluations during sampling.
   """
-  def euler_sampler(model, z=None):
+  def euler_sampler(model, z=None, fracs=None):
     """The probability flow ODE sampler with simple Euler discretization.
 
     Args:
@@ -81,9 +81,17 @@ def get_rectified_flow_sampler(sde, shape, inverse_scaler, device='cuda'):
         x = z0.detach().clone()
       else:
         x = z
+        z0 = z
       
       model_fn = mutils.get_model_fn(model, train=False) 
       
+      # List of x's at each frac along trajectory
+      if fracs is not None:
+        ret = []
+        fracs_int = list(map(lambda x : int(sde.sample_N*x), fracs))
+        if 0 in fracs_int:
+          ret.append(x.detach().clone())
+
       ### Uniform
       dt = 1./sde.sample_N
       eps = 1e-3 # default: 1e-3
@@ -98,10 +106,18 @@ def get_rectified_flow_sampler(sde, shape, inverse_scaler, device='cuda'):
         pred_sigma = pred + (sigma_t**2)/(2*(sde.noise_scale**2)*((1.-num_t)**2)) * (0.5 * num_t * (1.-num_t) * pred - 0.5 * (2.-num_t)*x.detach().clone())
 
         x = x.detach().clone() + pred_sigma * dt + sigma_t * np.sqrt(dt) * torch.randn_like(pred_sigma).to(device)
+
+        if fracs is not None and i+1 in fracs_int:
+          # ret.append(inverse_scaler(x))
+          # ret.append(inverse_scaler(z0+pred))
+          ret.append(inverse_scaler(x+pred*(1.-num_t)))
       
       x = inverse_scaler(x)
       nfe = sde.sample_N
-      return x, nfe
+      if fracs is not None:
+        return ret, nfe
+      else:
+        return x, nfe
   
   def rk45_sampler(model, z=None):
     """The probability flow ODE sampler with black-box ODE solver.

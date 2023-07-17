@@ -48,8 +48,16 @@ pip install numpy==1.21.6 ninja==1.11.1 matplotlib==3.7.0 ml_collections==0.1.1
 ### Train 1-Rectified Flow
 Run the following command to train a 1-Rectified Flow from scratch
 
-```
+<!-- ```
 python ./main.py --config ./configs/rectified_flow/cifar10_rf_gaussian_ddpmpp.py --eval_folder eval --mode train --workdir ./logs/1_rectified_flow
+``` -->
+
+```
+python3.8 ./main.py --config ./configs/rectified_flow/cifar10_rf_gaussian_ddpmpp.py --eval_folder eval --mode train --workdir ./logs/1_rectified_flow
+python3.8 ./main.py --config ./configs/rectified_flow/cifar10_rf_pink_ddpmpp.py --eval_folder eval --mode train --workdir ./logs/1_rf_pink
+python3.8 ./main.py --config ./configs/rectified_flow/cifar10_rf_brown_ddpmpp.py --eval_folder eval --mode train --workdir ./logs/1_rf_brown
+python3.8 ./main.py --config ./configs/rectified_flow/cifar10_rf_blue_ddpmpp.py --eval_folder eval --mode train --workdir ./logs/1_rf_blue
+python3.8 ./main.py --config ./configs/rectified_flow/cifar10_rf_violet_ddpmpp.py --eval_folder eval --mode train --workdir ./logs/1_rf_violet
 ```
 
 * ```--config``` The configuration file for this run.
@@ -63,11 +71,29 @@ python ./main.py --config ./configs/rectified_flow/cifar10_rf_gaussian_ddpmpp.py
 We follow the evaluation pipeline as in [Score SDE](https://github.com/yang-song/score_sde_pytorch). You can download [`cifar10_stats.npz`](https://drive.google.com/file/d/14UB27-Spi8VjZYKST3ZcT8YVhAluiFWI/view?usp=sharing) and save it to `assets/stats/`. 
 Then run
 
-```
+<!-- ```
 python ./main.py --config ./configs/rectified_flow/cifar10_rf_gaussian_ddpmpp.py --eval_folder eval --mode eval --workdir ./logs/1_rectified_flow --config.eval.enable_sampling  --config.eval.batch_size 1024 --config.eval.num_samples 50000 --config.eval.begin_ckpt 2
+``` -->
+
+```
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_gaussian_ddpmpp.py --eval_folder eval --mode eval --workdir ./logs/1_rectified_flow --config.eval.enable_sampling  --config.eval.batch_size 1024 --config.eval.num_samples 50000 --config.eval.begin_ckpt 12
+
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_pink_ddpmpp.py --eval_folder eval --mode eval --workdir ./logs/1_rf_pink --config.eval.enable_sampling  --config.eval.batch_size 128 --config.eval.num_samples 50000 --config.eval.begin_ckpt 1
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_brown_ddpmpp.py --eval_folder eval --mode eval --workdir ./logs/1_rf_brown --config.eval.enable_sampling  --config.eval.batch_size 128 --config.eval.num_samples 50000 --config.eval.begin_ckpt 1
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_blue_ddpmpp.py --eval_folder eval --mode eval --workdir ./logs/1_rf_blue --config.eval.enable_sampling  --config.eval.batch_size 128 --config.eval.num_samples 50000 --config.eval.begin_ckpt 1
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_violet_ddpmpp.py --eval_folder eval --mode eval --workdir ./logs/1_rf_violet --config.eval.enable_sampling  --config.eval.batch_size 128 --config.eval.num_samples 50000 --config.eval.begin_ckpt 1
 ```
 
 which uses a batch size of 1024 to sample 50000 images, starting from checkpoint-2.pth, and computes the FID and IS.
+
+### Evaluate trajectories
+```
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_gaussian_ddpmpp.py --eval_folder eval --mode eval_traj --workdir ./logs/1_rectified_flow --config.eval.enable_sampling  --config.eval.batch_size 16 --config.eval.num_samples 5000 --config.eval.begin_ckpt 2
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_pink_ddpmpp.py --eval_folder eval --mode eval_traj --workdir ./logs/1_rf_pink --config.eval.enable_sampling  --config.eval.batch_size 16 --config.eval.num_samples 5000 --config.eval.begin_ckpt 2
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_brown_ddpmpp.py --eval_folder eval --mode eval_traj --workdir ./logs/1_rf_brown --config.eval.enable_sampling  --config.eval.batch_size 16 --config.eval.num_samples 5000 --config.eval.begin_ckpt 2
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_blue_ddpmpp.py --eval_folder eval --mode eval_traj --workdir ./logs/1_rf_blue --config.eval.enable_sampling  --config.eval.batch_size 16 --config.eval.num_samples 5000 --config.eval.begin_ckpt 2
+python3.8 main.py --config ./configs/rectified_flow/cifar10_rf_violet_ddpmpp.py --eval_folder eval --mode eval_traj --workdir ./logs/1_rf_violet --config.eval.enable_sampling  --config.eval.batch_size 16 --config.eval.num_samples 5000 --config.eval.begin_ckpt 2
+```
 
 ### Generate Data Pair $(Z_0, Z_1)$ with 1-Rectified Flow
 

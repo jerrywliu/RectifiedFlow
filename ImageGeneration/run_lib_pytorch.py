@@ -170,6 +170,57 @@ def train(config, workdir):
               save_image(image_grid, fout)
 
 
+def evaluate_trajectory(config, workdir, eval_folder="trajectory"):
+  # Create directory to eval_folder
+  eval_dir = os.path.join(workdir, eval_folder)
+  tf.io.gfile.makedirs(eval_dir)
+
+  # Build data pipeline
+  train_ds, eval_ds = datasets.get_pytorch_dataset(config)
+
+  # Create data normalizer and its inverse
+  scaler = datasets.get_data_scaler(config)
+  inverse_scaler = datasets.get_data_inverse_scaler(config)
+
+  # Initialize model
+  score_model = mutils.create_model(config)
+  optimizer = losses.get_optimizer(config, score_model.parameters())
+  ema = ExponentialMovingAverage(score_model.parameters(), decay=config.model.ema_rate)
+  state = dict(optimizer=optimizer, model=score_model, ema=ema, step=0)
+
+  checkpoint_dir = os.path.join(workdir, "checkpoints")
+
+  # Setup SDEs
+  if config.training.sde.lower() == 'rectified_flow':
+    sde = sde_lib.RectifiedFlow(init_type=config.sampling.init_type, noise_scale=config.sampling.init_noise_scale, use_ode_sampler=config.sampling.use_ode_sampler, sigma_var=config.sampling.sigma_variance, ode_tol=config.sampling.ode_tol, sample_N=config.sampling.sample_N)
+    sampling_eps = 1e-3
+  else:
+    raise NotImplementedError(f"SDE {config.training.sde} unknown.")
+
+  # Create data loaders for likelihood evaluation. Only evaluate on uniformly dequantized data
+  train_ds_bpd, eval_ds_bpd = datasets.get_pytorch_dataset(config)   ###NOTE: XC: fix later
+
+  sampling_shape = (config.eval.batch_size,
+                    config.data.num_channels,
+                    config.data.image_size, config.data.image_size)
+  sampling_fn = sampling.get_sampling_fn(config, sde, sampling_shape, inverse_scaler, sampling_eps)
+
+  ckpt = config.eval.begin_ckpt
+  ckpt_filename = os.path.join(checkpoint_dir, "checkpoint_{}.pth".format(ckpt))
+  ckpt_path = os.path.join(checkpoint_dir, f'checkpoint_{ckpt}.pth')
+  state = restore_checkpoint(ckpt_path, state, device=config.device)
+  ema.copy_to(score_model.parameters())
+
+  fracs = [0, 0.001, 0.25, 0.5, 0.75, 1]
+  sample, n = sampling_fn(score_model, fracs=fracs)
+  nrow = int(np.sqrt(sample.shape[0]))
+  image_grid = make_grid(sample, nrow, padding=2)
+
+  with tf.io.gfile.GFile(
+      os.path.join(eval_dir, f"trajectory_{frac}.png"), "wb") as fout:
+    save_image(image_grid, fout)
+
+
 def evaluate(config,
              workdir,
              eval_folder="eval"):
